@@ -26,11 +26,10 @@ func main() {
 		MaxAge:         300,
 	}))
 
-	// API 
-	r.Route("/itens", func(r chi.Router) {
+	r.Route("/bills", func(r chi.Router) {
 		r.Post("/", createItem)
-		r.Get("/", readItems)
-		r.Get("/{id}", getItemByID)
+		r.Get("/", getBillsByDateRange)
+		r.Get("/all", readItems)
 		r.Put("/{id}", updateItem)
 		r.Delete("/{id}", deleteItem)
 	})
@@ -46,7 +45,7 @@ func main() {
 		fs.ServeHTTP(w, req)
 	})
 
-	log.Println("Server running at http://localhost:8082 <---")
+	log.Printf("Server running at http://localhost:8082 <---")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal(err)
 	}

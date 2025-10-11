@@ -13,8 +13,8 @@ import (
 var db *sql.DB
 
 func InitDB() *sql.DB {
-	
-// environment variables defined in docker-compose
+
+	// environment variables defined in docker-compose
 	dbUser := getEnvOrDefault("DB_USER", "usuario")
 	dbPass := getEnvOrDefault("DB_PASS", "senha123")
 	dbHost := getEnvOrDefault("DB_HOST", "localhost")
@@ -50,11 +50,13 @@ func InitDB() *sql.DB {
 	}
 
 	query := `
-	CREATE TABLE IF NOT EXISTS items  (
-		id INT AUTO_INCREMENT PRIMARY KEY,
-		name VARCHAR(100) NOT NULL,
-		price DECIMAL(10,2) NOT NULL
-	)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+	CREATE TABLE IF NOT EXISTS bills (
+		id BINARY(16) PRIMARY KEY,
+		embasa DECIMAL(10,2) NOT NULL,
+		coelba DECIMAL(10,2) NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 	`
 	_, err = db.Exec(query)
 
@@ -66,7 +68,6 @@ func InitDB() *sql.DB {
 
 	return db
 }
-
 
 func getEnvOrDefault(key, defaultValue string) string {
 	value := os.Getenv(key)
