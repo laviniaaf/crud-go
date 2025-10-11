@@ -2,222 +2,221 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 )
 
-// the handler will return the item data in JSON format in the HTTP response body
-// to be able to check the bank values (id, name and price)
-// in the accurate test converter the JSON back to a struct using marshal
-// without this conversation would not give to make the checks of the item fields
-
-// any type of data in go can be converted to []byte through the marshal function
-// the marshal = converts any value (struct, map) to a byte array ([]byte) that becomes JSON format
-
-// mockDB = global variable for database mock
 var mockDB sqlmock.Sqlmock
 
 func TestMain(m *testing.M) {
-
 	var err error
 
-	db, mockDB, err = sqlmock.New() // creates database mock
+	db, mockDB, err = sqlmock.New()
 
 	if err != nil {
-		panic("Error creating database mock: " + err.Error())
+		log.Fatal("Error in mock the bank:", err)
 	}
-
 	m.Run()
 }
 
-func TestCreateItem(t *testing.T) {
-
-	t.Run("success", func(t *testing.T) {
-
-		item := Item{
-			Name:  "Computer",
-			Price: 990.50,
-		}
-
-		body, _ := json.Marshal(item) // transforms the item into JSON
-
-		mockDB.ExpectExec("INSERT INTO items").
-			WithArgs(item.Name, item.Price).
-			WillReturnResult(sqlmock.NewResult(1, 1))
-
-		req := httptest.NewRequest("POST", "/itens", bytes.NewReader(body))
-
-		rr := httptest.NewRecorder()
-
-		createItem(rr, req)
-
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusOK)
-		}
-
-		var createdItem Item
-
-		err := json.Unmarshal(rr.Body.Bytes(), &createdItem) // decodes response JSON
-
-		if err != nil {
-			t.Fatal("Error decoding JSON response:", err)
-		}
-
-		if createdItem.ID != 1 {
-			t.Errorf("Unexpected ID: received %d, expected %d", createdItem.ID, 1)
-		}
-
-		if err := mockDB.ExpectationsWereMet(); err != nil {
-			t.Errorf("Mock expectations not met: %s", err)
-		}
-	})
-
-	t.Run("json_invalid", func(t *testing.T) {
-
-		req := httptest.NewRequest("POST", "/itens", bytes.NewBufferString("json-invalid"))
-
-		rr := httptest.NewRecorder()
-
-		createItem(rr, req)
-
-		if status := rr.Code; status != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusBadRequest)
-		}
-	})
-}
-
 func TestReadItems(t *testing.T) {
+	testID1 := uuid.New()
+	testID2 := uuid.New()
+	now := time.Now()
 
-	rows := sqlmock.NewRows([]string{"id", "name", "price"}).
-		AddRow(1, "Computer", 990.50).
-		AddRow(2, "Keyboard Redragon", 145.99)
+	rows := sqlmock.NewRows([]string{"id", "embasa", "coelba", "created_at", "updated_at"}).
+		AddRow(testID1.String(), 123.45, 67.89, now, now).
+		AddRow(testID2.String(), 654.32, 109.87, now, now)
 
-	mockDB.ExpectQuery("SELECT id, name, price FROM items").
-		WillReturnRows(rows)
+	mockDB.ExpectQuery(`SELECT .* FROM bills`).WillReturnRows(rows)
 
-	req := httptest.NewRequest("GET", "/itens", nil)
-
+	req := httptest.NewRequest("GET", "/bills", nil)
 	rr := httptest.NewRecorder()
 
 	readItems(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusOK)
+		t.Errorf("Status unexpected: received %v, expected %v", status, http.StatusOK)
 	}
 
-	var items []Item
-
-	err := json.Unmarshal(rr.Body.Bytes(), &items)
-
+	var bills []Bill
+	err := json.Unmarshal(rr.Body.Bytes(), &bills)
 	if err != nil {
 		t.Fatal("Error decoding JSON response:", err)
 	}
 
-	if len(items) != 2 {
-		t.Errorf("Unexpected number of items: received %d, expected %d", len(items), 2)
+	if len(bills) != 2 {
+		t.Errorf("Unexpected number of bills: received %d, expected %d", len(bills), 2)
 	}
 
-	if items[0].Name != "Computer" {
-		t.Errorf("Unexpected item name: received %s, expected %s", items[0].Name, "Computer")
+	if bills[0].Embasa != 123.45 || bills[0].Coelba != 67.89 {
+		t.Errorf("Unexpected data in the first bill: %+v", bills[0])
 	}
 
-	if err := mockDB.ExpectationsWereMet(); err != nil {
-		t.Errorf("Mock expectations not met: %s", err)
+	if bills[1].Embasa != 654.32 || bills[1].Coelba != 109.87 {
+		t.Errorf("Unexpected data in the second bill: %+v", bills[1])
+	}
+}
+
+func TestCreateItem(t *testing.T) {
+	bill := Bill{
+		Embasa: 123.45,
+		Coelba: 67.89,
+	}
+
+	mockDB.ExpectExec(`INSERT INTO bills .*`).
+		WithArgs(sqlmock.AnyArg(), bill.Embasa, bill.Coelba, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	body, _ := json.Marshal(bill)
+	req := httptest.NewRequest("POST", "/bills", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	createItem(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Status unexpected: received %v, expected %v. Response: %s",
+			status, http.StatusOK, rr.Body.String())
+	}
+
+	var response Bill
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	if err != nil {
+		t.Fatal("Error decoding JSON response:", err)
+	}
+
+	if response.Embasa != bill.Embasa || response.Coelba != bill.Coelba {
+		t.Errorf("Unexpected data in the response: %+v", response)
 	}
 }
 
 func TestUpdateItem(t *testing.T) {
+	id := uuid.New()
+	bill := Bill{
+		Embasa: 200.00,
+		Coelba: 300.00,
+	}
 
-	t.Run("success", func(t *testing.T) {
-		id := 1
-		item := Item{
-			Name:  "Mouse Update",
-			Price: 75.00,
-		}
+	mockDB.ExpectExec(`UPDATE bills .*`).
+		WithArgs(bill.Embasa, bill.Coelba, sqlmock.AnyArg(), id.String()).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-		body, _ := json.Marshal(item)
+	body, _ := json.Marshal(bill)
+	req := httptest.NewRequest("PUT", "/bills/"+id.String(), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
 
-		r := chi.NewRouter()
+	rr := httptest.NewRecorder()
 
-		r.Put("/itens/{id}", updateItem)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", id.String())
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-		req := httptest.NewRequest("PUT", "/itens/"+strconv.Itoa(id), bytes.NewReader(body))
+	updateItem(rr, req)
 
-		rr := httptest.NewRecorder()
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Status: received %v, expected %v", status, http.StatusOK)
+	}
 
-		mockDB.ExpectExec("UPDATE items").
-			WithArgs(item.Name, item.Price, id).
-			WillReturnResult(sqlmock.NewResult(0, 1))
+	var response Bill
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	if err != nil {
+		t.Fatal("Error response JSON:", err)
+	}
 
-		r.ServeHTTP(rr, req)
-
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusOK)
-		}
-
-		if err := mockDB.ExpectationsWereMet(); err != nil {
-			t.Errorf("Mock expectations not met: %s", err)
-		}
-	})
-
-	t.Run("id_invalid", func(t *testing.T) {
-		req := httptest.NewRequest("PUT", "/itens/not-is-a-id", nil)
-
-		rr := httptest.NewRecorder()
-
-		updateItem(rr, req)
-
-		if status := rr.Code; status != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusBadRequest)
-		}
-	})
+	if response.Embasa != bill.Embasa || response.Coelba != bill.Coelba {
+		t.Errorf("Unexpected data in the response: %+v", response)
+	}
 }
 
 func TestDeleteItem(t *testing.T) {
+	id := uuid.New()
 
-	t.Run("success", func(t *testing.T) {
+	mockDB.ExpectExec(`DELETE FROM bills .*`).
+		WithArgs(id.String()).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 
-		id := 1
+	req := httptest.NewRequest("DELETE", "/bills/"+id.String(), nil)
 
-		r := chi.NewRouter()
+	rr := httptest.NewRecorder()
 
-		r.Delete("/itens/{id}", deleteItem)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", id.String())
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-		req := httptest.NewRequest("DELETE", "/itens/"+strconv.Itoa(id), nil)
+	deleteItem(rr, req)
 
-		rr := httptest.NewRecorder()
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("STATUS: received %v, expected %v", status, http.StatusOK)
+	}
+}
 
-		mockDB.ExpectExec("DELETE FROM items").
-			WithArgs(id).
-			WillReturnResult(sqlmock.NewResult(0, 1))
+func TestGetBillsByDateRange_ValidDates(t *testing.T) {
 
-		r.ServeHTTP(rr, req)
+	mockDB, mock, err := sqlmock.New()
 
-		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusOK)
-		}
+	if err != nil {
+		t.Fatalf("error creating mock DB: %v", err)
+	}
+	defer mockDB.Close()
 
-		if err := mockDB.ExpectationsWereMet(); err != nil {
-			t.Errorf("Mock expectations not met: %s", err)
-		}
-	})
+	db = mockDB
 
-	t.Run("id_invalid", func(t *testing.T) {
-		req := httptest.NewRequest("DELETE", "/itens/not-is-a-id", nil)
+	billID := uuid.New()
+	createdAt := time.Date(2025, 9, 28, 12, 0, 0, 0, time.UTC)
+	updatedAt := createdAt
 
-		rr := httptest.NewRecorder()
+	rows := sqlmock.NewRows([]string{"id", "embasa", "coelba", "created_at", "updated_at"}).
+		AddRow(strings.ReplaceAll(billID.String(), "-", ""), "100", "200", createdAt, updatedAt)
 
-		deleteItem(rr, req)
+	mock.ExpectQuery("SELECT .* FROM bills WHERE created_at >= .* AND created_at < .*").
+		WillReturnRows(rows)
 
-		if status := rr.Code; status != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: received %v, expected %v", status, http.StatusBadRequest)
-		}
-	})
+	req := httptest.NewRequest("GET", "/bills?start=2025-09-01&end=2025-09-30", nil)
+	w := httptest.NewRecorder()
+
+	getBillsByDateRange(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var result []Bill
+
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatalf("error decoding response: %v", err)
+	}
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 bill, got %d", len(result))
+	}
+
+	if result[0].ID != billID {
+		t.Errorf("expected ID %v, got %v", billID, result[0].ID)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %v", err)
+	}
+}
+
+func TestGetBillsByDateRange_InvalidStartDate(t *testing.T) {
+	req := httptest.NewRequest("GET", "/bills?start=invalid&end=2025-09-30", nil)
+	w := httptest.NewRecorder()
+
+	getBillsByDateRange(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
 }
