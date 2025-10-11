@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRUD Management</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <h1>Create | Read | Update | Delete</h1>
+
+  <h2>Item Form</h2>
+  <form id="form-item">
+    <input type="hidden" id="item-id">
+
+    <div>
+      <label for="name">Item Name:</label>
+      <input type="text" id="name" placeholder="Ex: Laptop" required>
+    </div>
+
+    <div>
+      <label for="price">Price:</label>
+      <input type="number" id="price" step="0.01" placeholder="Ex: 4500.50" required>
+    </div>
+
+    <button type="submit" id="btn-submit">Add Item</button>
+    <button type="button" id="btn-cancel" onclick="cancelEdit()">Cancel Edit</button>
+  </form>
+
+  <div>
+    <label for="search">Search item by ID:</label>
+    <input type="number" id="search" placeholder="Ex: ID = 2" required>
+    <button type="button" id="btn-search" onclick="searchItem()">Search</button>
+  </div>
+
+  <ul id="search-result"></ul>
+
+  <h2>Item List</h2>
+  <ul id="item-list"></ul>
+
+  <script src="/script.js"></script>
+</body>
+</html>
