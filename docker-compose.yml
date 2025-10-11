@@ -1,0 +1,32 @@
+# orchestras many containers (one to the database and one to the backend)
+
+services:
+
+  mariadb:  
+    image: mariadb:latest
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: senha123
+      MARIADB_DATABASE: database
+      MARIADB_USER: usuario
+      MARIADB_PASSWORD: senha123
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 --user=\"$$MARIADB_USER\" --password=\"$$MARIADB_PASSWORD\""]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+
+  backend:
+    build: .
+    ports:
+      - "8082:8080"
+    environment:
+      DB_HOST: mariadb
+      DB_USER: usuario
+      DB_PASS: senha123
+      DB_NAME: database
+      DB_PORT: 3306
+    depends_on:
+      mariadb:
+        condition: service_healthy
