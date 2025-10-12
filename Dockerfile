@@ -1,18 +1,18 @@
 FROM golang:1.23-alpine AS builder
 
-WORKDIR /app
+WORKDIR /app/backend
 
-# Copy go mod and sum 
-COPY go.mod go.sum ./
+# Copy go mod and sum files from backend directory
+COPY backend/go.mod backend/go.sum ./
 
 # Download dependencies
 RUN go mod download
 
-# Copy source files
-COPY . .
+# Copy backend source files
+COPY backend/ .
 
 # Compile the application
-RUN go build -o /main ./backend
+RUN go build -o /main .
 
 FROM alpine:latest
 WORKDIR /app
