@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -45,7 +46,7 @@ func main() {
 		fs.ServeHTTP(w, req)
 	})
 
-	log.Printf("Server running at http://localhost:8082 <---")
+	log.Info("Server running at http://localhost:8083 <---")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal(err)
 	}
