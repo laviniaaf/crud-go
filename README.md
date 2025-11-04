@@ -9,4 +9,4 @@ The application uses **Docker** containers to simplify project setup and executi
 docker compose up --build
 
 ## Access
- http://localhost:8082
+ http://localhost:8083
