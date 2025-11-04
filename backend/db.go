@@ -8,18 +8,25 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 var db *sql.DB
 
 func InitDB() *sql.DB {
+	// load .env
+	_ = godotenv.Load()
 
-	// environment variables defined in docker-compose
-	dbUser := getEnvOrDefault("DB_USER", "usuario")
-	dbPass := getEnvOrDefault("DB_PASS", "senha123")
-	dbHost := getEnvOrDefault("DB_HOST", "localhost")
-	dbPort := getEnvOrDefault("DB_PORT", "3306")
-	dbName := getEnvOrDefault("DB_NAME", "database")
+	// environment variables
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	if dbUser == "" || dbPass == "" || dbHost == "" || dbPort == "" || dbName == "" {
+		log.Fatalf("Missing DB configuration: set DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME in environment or .env")
+	}
 
 	// connection
 	dsn := fmt.Sprintf(
