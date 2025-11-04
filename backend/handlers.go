@@ -17,7 +17,7 @@ func createItem(w http.ResponseWriter, r *http.Request) {
 
 	// Decode the JSON request body into the bill struct
 	if err := json.NewDecoder(r.Body).Decode(&bill); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, "Request body is missing or malformed", http.StatusBadRequest)
 		return
 	}
 
