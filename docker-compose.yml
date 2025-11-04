@@ -20,7 +20,7 @@ services:
   backend:
     build: .
     ports:
-      - "8082:8080"
+      - "8083:8080"
     environment:
       DB_HOST: mariadb
       DB_USER: usuario

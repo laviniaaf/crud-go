@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Bills API
+  version: 1.0.0
+  description: CRUD API for bills (embasa, coelba). Generated from the backend implementation in this repo.
+servers:
+  - url: http://localhost:8080
+paths:
+  /bills/:
+    post:
+      summary: Create a bill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillInput'
+      responses:
+        '200':
+          description: Created bill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+    get:
+      summary: List bills (optionally filtered by date range)
+      parameters:
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Inclusive start date (YYYY-MM-DD)
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Inclusive end date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Array of bills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bill'
+  /bills/all:
+    get:
+      summary: Get all bills
+      responses:
+        '200':
+          description: Array of bills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bill'
+  /bills/{id}:
+    put:
+      summary: Update a bill
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillInput'
+      responses:
+        '200':
+          description: Updated bill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+    delete:
+      summary: Delete a bill
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted
+components:
+  schemas:
+    Bill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        embasa:
+          type: number
+          format: float
+          example: 123.45
+        coelba:
+          type: number
+          format: float
+          example: 67.89
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-04T20:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-11-04T20:00:00Z"
+    BillInput:
+      type: object
+      properties:
+        embasa:
+          type: number
+          format: float
+        coelba:
+          type: number
+          format: float
+      required:
+        - embasa
+        - coelba

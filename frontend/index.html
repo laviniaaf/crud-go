@@ -3,43 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRUD Management</title>
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <title>Management</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
-  <h1>Create | Read | Update | Delete</h1>
-
-  <h2>Item Form</h2>
+  <h1>Bills Management</h1>
+  <h2>Create your bill: </h2>
   <form id="form-item">
     <input type="hidden" id="item-id">
 
-    <div>
-      <label for="name">Item Name:</label>
-      <input type="text" id="name" placeholder="Ex: Laptop" required>
+    <div class="form-group">
+      <label for="embasa">EMBASA (R$):</label>
+      <input type="number" step="0.01" id="embasa" placeholder="0.00" required>
     </div>
 
-    <div>
-      <label for="price">Price:</label>
-      <input type="number" id="price" step="0.01" placeholder="Ex: 4500.50" required>
+    <div class="form-group">
+      <label for="coelba">Coelba (R$):</label>
+      <input type="number" step="0.01" id="coelba" placeholder="0.00" required>
     </div>
 
-    <button type="submit" id="btn-submit">Add Item</button>
-    <button type="button" id="btn-cancel" onclick="cancelEdit()">Cancel Edit</button>
+    <div class="form-group dates">
+      <label for="created-at">Created at:</label>
+      <input type="datetime-local" id="created-at">
+      <div id="updated-at-wrapper" style="display:none;">
+          <label for="updated-at">Last Updated:</label>
+          <input type="datetime-local" id="updated-at" readonly>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" id="btn-submit">Save</button>
+      <button type="button" id="btn-cancel" onclick="cancelEdit()">Cancel</button>
+    </div>
   </form>
 
-  <div>
-    <label for="search">Search item by ID:</label>
-    <input type="number" id="search" placeholder="Ex: ID = 2" required>
+  <!--- <div class="search-box">
+    <label for="search">Search by ID:</label>
+    <input type="text" id="search" placeholder="Enter bill ID">
     <button type="button" id="btn-search" onclick="searchItem()">Search</button>
-  </div>
+  </div> !-->
 
   <ul id="search-result"></ul>
+  
+  <div class="date-filter">
+    <h3>Filter by date range: </h3>
+    <div class="date-inputs">
+      <div class="form-group">
+        <label for="start-date">Start Date:</label>
+        <input type="date" id="start-date">
+      </div>
+      <div class="form-group">
+        <label for="end-date">End Date:</label>
+        <input type="date" id="end-date">
+      </div>
+    </div>
 
-  <h2>Item List</h2>
+    <div class="form-actions">
+      <button type="button" id="btn-apply-filter" onclick="applyDateFilter()">Apply</button>
+      <button type="button" id="btn-clear-filter" onclick="clearDateFilter()">Clear</button>
+    </div>
+  </div>
+  
+
+  <h2>Bills List: </h2>
   <ul id="item-list"></ul>
-
   <script src="/script.js"></script>
 </body>
 </html>

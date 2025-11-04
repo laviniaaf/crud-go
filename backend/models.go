@@ -1,12 +1,16 @@
 // models = data structures
-
 package main
 
-// to send struct items to http, it must be in  JSON format, 
-// since HTTP requests work with JSON as text
+import (
+	"time"
 
-type Item struct {
-	ID    int     `json:"id"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
+	"github.com/google/uuid"
+)
+
+type Bill struct {
+	ID        uuid.UUID `json:"id"`
+	Embasa    float64   `json:"embasa"`
+	Coelba    float64   `json:"coelba"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
